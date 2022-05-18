@@ -1,5 +1,5 @@
 # MarkovChain_SportsClub
-El siguiente proyecto está inspirado en en tema de cadenas de markov, en donde
+El siguiente proyecto está inspirado en el tema de cadenas de markov, en donde
 se implementó un caso de uso sobre hallar las probabilidades de transición 
 de que un equipo de futbol gane, empate ó pierda el próximo partido dado
 los resultados anteriores, los cuáles fueron obtenidos de internet y que se 
