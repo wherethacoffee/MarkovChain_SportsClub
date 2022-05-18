@@ -1,0 +1,166 @@
+---
+title: "PartidosProyecto"
+author: "Angela Lizeth Saldaña Valdés"
+date: "16/5/2022"
+output: word_document
+---
+
+```{r}
+library(shiny)
+
+# Define UI for dataset viewer app ----
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("PROYECTO CADENAS DE MARKOV: CLUB DEPORTIVO"),
+
+
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+      
+        # Include clarifying text ----
+      helpText("Lo mostrado representa una matriz de transicion de un paso",
+               "donde aparecen las probabilidades de transicion de estados,",
+               "es decir, con estos datos podemos ver la probabilidad de que",
+               "empate, pierda o gane"),
+
+
+
+      # Input: Text for providing a caption ----
+      # Note: Changes made to the caption in the textInput control
+      # are updated in the output area immediately as you type
+      textInput(inputId = "caption",
+                label = "TEMA:",
+                value = "MATRIZ DE TRANSICIÓN DE UN PASO"),
+
+      # Input: Selector for choosing dataset ----
+      selectInput(inputId = "dataset",
+                  label = "ESCOJA UN EQUIPO:",
+                  choices = c("AMERICA", "CHIVAS", "CRUZ AZUL")),
+
+      # Input: Numeric entry for number of obs to view ----
+      numericInput(inputId = "obs",
+                   label = "Número de observaciones para ver:",
+                   value = 10),
+      sliderInput("steps",
+                        "Número de pasos:",
+                        min = 1,
+                        max = 20,
+                        value = 10),
+        # Include clarifying text ----
+      helpText("Al elegir número de pasos nos mostrará otra matriz",
+               "donde calculará nuevas probabilidades, estan corresponden,",
+               "a la probabilidad n días después."),
+       # Include clarifying text ----
+      helpText("Nota: Cuando los renglones de la matriz de n pasos",
+               "poseen elementos idénticos, hace referencia a que",
+               "es una probabilidad de estado estable,",
+               "refleja el hecho de que la probabilidad de los resultados del ",
+               "partido que está en un estado particular es en esencia independiente",
+               "del estado del resultado del partido n días antes"),
+
+      
+     
+    ),
+
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Formatted text for caption ----
+      h3(textOutput("caption", container = span)),
+
+      # Output: Verbatim text for data summary ----
+      verbatimTextOutput("summary"),
+
+      # Output: HTML table with requested number of observations ----
+      tableOutput("view"),
+
+    
+      helpText("DIAGRAMA DE TRANSICION DE ESTADOS"),
+
+      
+     plotOutput(outputId = "chainplot", height = "500px"),
+     verbatimTextOutput("st"),
+    )
+  )
+)
+
+# Define server logic to summarize and view selected dataset ----
+server <- function(input, output) {
+
+  # Return the requested dataset ----
+  # By declaring datasetInput as a reactive expression we ensure
+  # that:
+  #
+  # 1. It is only called when the inputs it depends on changes
+  # 2. The computation and result are shared by all the callers,
+  #    i.e. it only executes a single time
+  datasetInput <- reactive({
+    switch(input$dataset,
+           "AMERICA" = DATOSAMERICA,
+           "CHIVAS" = DATOSCHIVAS,
+           "CRUZ AZUL" = DATOSCRUZAZUL)
+  })
+
+  # Create caption ----
+  # The output$caption is computed based on a reactive expression
+  # that returns input$caption. When the user changes the
+  # "caption" field:
+  #
+  # 1. This function is automatically called to recompute the output
+  # 2. New caption is pushed back to the browser for re-display
+  #
+  # Note that because the data-oriented reactive expressions
+  # below don't depend on input$caption, those expressions are
+  # NOT called when input$caption changes
+  output$caption <- renderText({
+    input$caption
+  })
+
+  # Generate a summary of the dataset ----
+  # The output$summary depends on the datasetInput reactive
+  # expression, so will be re-executed whenever datasetInput is
+  # invalidated, i.e. whenever the input$dataset changes
+  output$summary <- renderPrint({
+    dataset <- datasetInput()
+    Pe<- dataset$RESULTADO
+    fit <- markovchainFit(data=Pe,confidencelevel = 0.95)
+       print(fit$estimate)
+       
+       
+  })
+  
+  # Show the first "n" observations ----
+  # The output$view depends on both the databaseInput reactive
+  # expression and input$obs, so it will be re-executed whenever
+  # input$dataset or input$obs is changed
+  output$view <- renderTable({
+    head(datasetInput(), n = input$obs)
+  })
+  
+   output$chainplot <- renderPlot({
+     dataset <- datasetInput()
+    Pe<- dataset$RESULTADO
+    fit <- markovchainFit(data=Pe,confidencelevel = 0.95)
+       plot(fit$estimate)
+    })
+   
+    output$st <- renderPrint({
+      dataset <- datasetInput()
+    Pe<- dataset$RESULTADO
+    fit <- markovchainFit(data=Pe,confidencelevel = 0.95)
+     a<- fit$estimate^input$steps
+     print("Steps Probabilities: ")
+        print(a)
+     })
+
+}
+
+# Create Shiny app ----
+shinyApp(ui, server)
+```
+
